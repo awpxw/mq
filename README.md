@@ -92,3 +92,23 @@ DLQ 管理页
 ├── 消费速率
 ├── 任务成功率
 └── 平均处理耗时
+
+
+接口列表
+
+序号	接口	方法	功能	演示技术点
+1	/tasks	POST	提交普通任务	Publisher Confirm、消息持久化
+2	/tasks/delayed	POST	提交延迟任务	延迟队列插件、x-delayed-message
+3	/tasks/priority	POST	提交优先级任务	优先级队列、消息排序
+4	/tasks/batch	POST	批量提交任务	批量发送、性能测试
+5	/tasks/{taskId}	GET	查询任务详情	幂等性验证、状态追踪
+6	/tasks/{taskId}/status	GET	查询任务状态	消息确认机制
+7	/tasks/{taskId}/retry	POST	手动重试任务	死信队列、手动重发
+8	/tasks/{taskId}/cancel	DELETE	取消待执行任务	消息确认、队列删除
+9	/dlq/messages	GET	查询死信队列消息	死信队列可视化
+10	/dlq/messages/{messageId}	GET	查询死信消息详情	死信原因分析
+11	/dlq/retry/{messageId}	POST	单条死信重发	手动重发、消息路由
+12	/dlq/retry/batch	POST	批量重发死信	批量操作、幂等性
+13	/dlq/messages/{messageId}	DELETE	删除死信消息	死信清理
+14	/monitor/queues	GET	查询队列监控数据	Actuator、队列深度
+15	/monitor/metrics	GET	查询系统指标	Micrometer、可观测性
