@@ -44,4 +44,5 @@ public class MessageIdempotent extends BaseEntity {
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime expireTime;
+
 }

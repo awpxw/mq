@@ -1,4 +1,4 @@
-package com.example;
+package com.example.utils;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
