@@ -5,7 +5,7 @@ import lombok.Getter;
 @Getter
 public enum ExecutionStatus {
 
-    START(0, "开始"),
+    START(0, "已开始"),
 
     SUCCESS(1, "成功"),
 

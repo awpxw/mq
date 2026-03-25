@@ -5,40 +5,42 @@ import lombok.Getter;
 @Getter
 public enum TaskType {
 
-    EMAIL("EMAIL", "邮件发送任务"),
+    TASK(0, "task"),
 
-    SMS("SMS", "短信发送任务"),
+    BAK(1, "bak");
 
-    CALC("CALC", "计算任务"),
+    private final Integer code;
 
-    REPORT("REPORT", "报表生成任务"),
+    private final String exchange;
 
-    BACKUP("BACKUP", "备份任务");
-
-    private final String code;
-
-    private final String desc;
-
-    TaskType(String code, String desc) {
+    TaskType(Integer code, String exchange) {
 
         this.code = code;
 
-        this.desc = desc;
+        this.exchange = exchange;
 
     }
 
-    public static TaskType fromCode(String code) {
+    public static String fromCode(Integer code) {
 
         if (code == null) {
             return null;
         }
         for (TaskType type : values()) {
             if (type.code.equals(code)) {
-                return type;
+                return type.getExchange();
             }
         }
         return null;
 
+    }
+
+    public static Boolean isTask(String taskType) {
+        return TASK.getCode() == Integer.parseInt(taskType);
+    }
+
+    public static Boolean isBak(String taskType) {
+        return BAK.getCode() == Integer.parseInt(taskType);
     }
 
 }

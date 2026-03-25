@@ -69,4 +69,5 @@ public class TaskConfig extends BaseEntity {
      * 描述
      */
     private String description;
+
 }

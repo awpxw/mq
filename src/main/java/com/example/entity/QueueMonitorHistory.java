@@ -63,4 +63,5 @@ public class QueueMonitorHistory extends BaseEntity {
      * 内存使用（字节）
      */
     private Long memoryUsed;
+
 }

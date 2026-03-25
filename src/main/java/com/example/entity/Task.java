@@ -120,4 +120,5 @@ public class Task extends BaseEntity {
      * 批次ID（批量提交时）
      */
     private String batchId;
+
 }

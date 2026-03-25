@@ -14,7 +14,7 @@ public class MsgUtils {
 
     private static final Long DEFAULT_RETRY_INTERVAL = 5L;
 
-    public static Message createMsg(String retryTimes, Long delayTime, String data) {
+    public static Message createMsg(Boolean enableRetry, String retryTimes, Long delayTime, String data, String type) {
         MessageProperties props = new MessageProperties();
         //幂等
         props.setMessageId(UUID.randomUUID().toString().replace("-", ""));
@@ -24,14 +24,21 @@ public class MsgUtils {
         props.setDeliveryMode(MessageDeliveryMode.PERSISTENT);
         props.setTimestamp(new Date());
         //重试
+        props.setHeader("enableRetry", enableRetry);
         props.setHeader("retryTimes", retryTimes);
+        //消息类型
+        props.setType(type);
         return MessageBuilder.withBody(data.getBytes())
                 .andProperties(props)
                 .build();
     }
 
-    public static Message createMsg(String data) {
-        return createMsg(DEFAULT_RETRY_COUNT, DEFAULT_RETRY_INTERVAL, data);
+    public static Message createMsg(String type, String data) {
+        return createMsg(true, DEFAULT_RETRY_COUNT, DEFAULT_RETRY_INTERVAL, data, type);
+    }
+
+    public static Message createDelayMsg(String type, String data, Long delayTime) {
+        return createMsg(true, DEFAULT_RETRY_COUNT, delayTime, data, type);
     }
 
 }
