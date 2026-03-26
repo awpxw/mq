@@ -16,7 +16,10 @@ public enum ExecutionStage {
     RETRYING("重试中", 2),
     
     /** 执行失败：任务最终执行失败（重试次数用尽） */
-    FAILED("执行失败", 3);
+    FAILED("执行失败", 3),
+
+    /** 执行成功 */
+    SUCCESS("执行成功", 4);
     
     /** 阶段描述 */
     private final String description;

@@ -2,4 +2,9 @@ spring:
   rabbitmq:
     listener:
       simple:
-        acknowledge-mode: manual
+        acknowledge-mode: auto
+        retry:
+          enabled: true
+          max-attempts: 3  # 最多重试3次（包括第一次）
+          initial-interval: 1000  # 重试间隔1秒
+          multiplier: 2  # 间隔倍数：1s, 2s, 4s

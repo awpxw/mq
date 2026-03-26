@@ -18,6 +18,7 @@ public class MsgUtils {
         MessageProperties props = new MessageProperties();
         //幂等
         props.setMessageId(UUID.randomUUID().toString().replace("-", ""));
+        props.setHeader("taskId", props.getMessageId());
         //延迟
         props.setExpiration(String.valueOf(System.currentTimeMillis() + (delayTime * 1000L)));
         props.setContentType(MessageProperties.CONTENT_TYPE_JSON);
@@ -33,11 +34,11 @@ public class MsgUtils {
                 .build();
     }
 
-    public static Message createMsg(String type, String data) {
+    public static Message createMsg(Long taskId, String type, String data) {
         return createMsg(true, DEFAULT_RETRY_COUNT, DEFAULT_RETRY_INTERVAL, data, type);
     }
 
-    public static Message createDelayMsg(String type, String data, Long delayTime) {
+    public static Message createDelayMsg(Long taskId, String type, String data, Long delayTime) {
         return createMsg(true, DEFAULT_RETRY_COUNT, delayTime, data, type);
     }
 

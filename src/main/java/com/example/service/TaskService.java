@@ -14,16 +14,13 @@ import com.example.mapper.TaskExecutionLogMapper;
 import com.example.mapper.TaskMapper;
 import com.example.utils.MsgUtils;
 import com.example.vo.TaskVO;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import jakarta.annotation.Resource;
-import org.apache.logging.log4j.spi.ExtendedLoggerWrapper;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.Objects;
 
 @Service
@@ -54,7 +51,7 @@ public class TaskService {
         Task entity = taskMapper.selectById(taskId);
         String taskType = entity.getTaskType();
         //创建消息
-        Message msg = MsgUtils.createMsg(taskType, dto.getTaskData());
+        Message msg = MsgUtils.createMsg(taskId, taskType, dto.getTaskData());
         String msgId = msg.getMessageProperties().getMessageId();
         //是否延迟
         boolean isDelay = dto.getDelayMs() != null && dto.getDelayMs() > 0;
@@ -105,8 +102,4 @@ public class TaskService {
         return CommonMapper.INSTANCE.toVO(one);
     }
 
-    public Void retry(TaskDTO dto) {
-        Long taskId = dto.getTaskId();
-
-    }
 }

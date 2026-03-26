@@ -52,7 +52,7 @@ public class TaskController {
 
     @PostMapping("/retry")
     public Result<Void> retry(@RequestBody TaskDTO dto) {
-        return Result.success(taskService.retry(dto));
+        return Result.success(null);
     }
 
 
