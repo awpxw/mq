@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.common.exception.Result;
 import com.example.dto.TaskBatchDTO;
 import com.example.dto.TaskDTO;
+import com.example.entity.DeadLetterMessage;
 import com.example.entity.Task;
 import com.example.mapper.TaskMapper;
 import com.example.service.TaskService;
@@ -50,11 +51,16 @@ public class TaskController {
         return Result.success(taskService.detail(dto));
     }
 
-    @PostMapping("/retry")
-    public Result<Void> retry(@RequestBody TaskDTO dto) {
-        return Result.success(null);
+    @PostMapping("/dead/page")
+    public Result<Page<DeadLetterMessage>> deadPage(@RequestBody TaskDTO dto) {
+        return Result.success(taskService.deadPage(dto));
     }
 
+    @PostMapping("/retry")
+    public Result<Void> retry(@RequestBody TaskDTO dto) {
+        taskService.retry(dto);
+        return Result.success(null);
+    }
 
 
 }

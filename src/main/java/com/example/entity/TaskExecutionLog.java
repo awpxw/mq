@@ -21,11 +21,6 @@ public class TaskExecutionLog extends BaseEntity {
     private Long taskId;
 
     /**
-     * 执行次数（第几次执行）
-     */
-    private Integer executionNo;
-
-    /**
      * 执行状态：0-开始，1-成功，2-失败
      */
     private Integer status;
@@ -53,19 +48,9 @@ public class TaskExecutionLog extends BaseEntity {
     private String inputData;
 
     /**
-     * 输出数据（JSON格式）
-     */
-    private String outputData;
-
-    /**
      * 错误信息
      */
     private String errorMsg;
-
-    /**
-     * 异常堆栈
-     */
-    private String stackTrace;
 
     /**
      * 消费者标签

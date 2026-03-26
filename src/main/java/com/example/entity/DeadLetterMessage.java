@@ -67,21 +67,6 @@ public class DeadLetterMessage extends BaseEntity {
     private LocalDateTime deathTime;
 
     /**
-     * 错误信息
-     */
-    private String errorMsg;
-
-    /**
-     * 异常堆栈
-     */
-    private String stackTrace;
-
-    /**
-     * x-death完整信息（JSON格式）
-     */
-    private String xDeathInfo;
-
-    /**
      * 重试状态：0-未重试，1-已重试，2-重试成功，3-重试失败
      */
     private Integer retryStatus;
@@ -96,4 +81,5 @@ public class DeadLetterMessage extends BaseEntity {
      * 重试次数
      */
     private Integer retryCount;
+
 }

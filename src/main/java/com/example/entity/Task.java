@@ -3,6 +3,7 @@ package com.example.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.example.common.database.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("task")
+@Builder
 public class Task extends BaseEntity {
 
     /**
@@ -34,24 +36,9 @@ public class Task extends BaseEntity {
     private String taskName;
 
     /**
-     * 优先级 1-10
-     */
-    private Integer priority;
-
-    /**
-     * 当前阶段：PENDING/CONSUMING/PROCESSING/RETRYING
-     */
-    private String currentStage;
-
-    /**
      * 任务数据（JSON格式）
      */
     private String taskData;
-
-    /**
-     * 任务执行结果（JSON格式）
-     */
-    private String taskResult;
 
     /**
      * 错误信息
@@ -62,11 +49,6 @@ public class Task extends BaseEntity {
      * 已重试次数
      */
     private Integer retryCount;
-
-    /**
-     * 最大重试次数
-     */
-    private Integer maxRetry;
 
     /**
      * 延迟毫秒数
@@ -110,11 +92,6 @@ public class Task extends BaseEntity {
      * 路由键
      */
     private String routingKey;
-
-    /**
-     * 链路追踪ID
-     */
-    private String traceId;
 
     /**
      * 批次ID（批量提交时）

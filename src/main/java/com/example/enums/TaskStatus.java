@@ -7,7 +7,7 @@ public enum TaskStatus {
 
     PENDING(0, "待处理"),
 
-    PROCESSING(1, "处理中"),
+    RUNNING(1, "处理中"),
 
     SUCCESS(2, "成功"),
 
@@ -15,7 +15,7 @@ public enum TaskStatus {
 
     CANCELLED(4, "已取消"),
 
-    DEAD_LETTER(5, "死信");
+    RETRY(5,"重试中");
 
     private final Integer code;
 

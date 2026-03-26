@@ -4,12 +4,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.example.dto.TaskBatchDTO;
 import com.example.dto.TaskDTO;
+import com.example.entity.DeadLetterMessage;
 import com.example.entity.Task;
 import com.example.entity.TaskExecutionLog;
-import com.example.enums.ExecutionStage;
-import com.example.enums.ExecutionStatus;
+import com.example.enums.TaskStatus;
 import com.example.enums.TaskType;
 import com.example.map.CommonMapper;
+import com.example.mapper.DeadLetterMessageMapper;
 import com.example.mapper.TaskExecutionLogMapper;
 import com.example.mapper.TaskMapper;
 import com.example.utils.MsgUtils;
@@ -35,6 +36,9 @@ public class TaskService {
     @Resource
     private TaskExecutionLogMapper taskExecutionLogMapper;
 
+    @Resource
+    private DeadLetterMessageMapper deadLetterMessageMapper;
+
 
     public Page<Task> page(TaskDTO task) {
         return taskMapper.selectPage(Page.of(task.getPageNo(), task.getPageSize()), null);
@@ -55,19 +59,19 @@ public class TaskService {
         String msgId = msg.getMessageProperties().getMessageId();
         //是否延迟
         boolean isDelay = dto.getDelayMs() != null && dto.getDelayMs() > 0;
-        Integer currentStage;
+        Integer status;
         LocalDateTime executeTime = null;
         if (isDelay) {
-            currentStage = ExecutionStage.PENDING.getCode();
+            status = TaskStatus.PENDING.getCode();
             executeTime = LocalDateTime.now().plusSeconds(dto.getDelayMs());
         } else {
-            currentStage = ExecutionStage.RUNNING.getCode();
+            status = TaskStatus.RUNNING.getCode();
         }
         //更新任务
         ChainWrappers.lambdaUpdateChain(Task.class)
                 .eq(Task::getId, taskId)
                 .set(Task::getMessageId, msgId)
-                .set(Task::getCurrentStage, currentStage)
+                .set(Task::getStatus, status)
                 .set(Objects.nonNull(executeTime), Task::getExecuteTime, taskType)
                 .set(Task::getQueueName, TaskType.fromCode(Integer.parseInt(taskType)))
                 .set(Task::getExchangeName, TaskType.fromCode(Integer.parseInt(taskType)) + "Exchange")
@@ -76,8 +80,7 @@ public class TaskService {
         //生成执行日志
         TaskExecutionLog log = TaskExecutionLog.builder()
                 .taskId(taskId)
-                .executionNo(0)
-                .status(ExecutionStatus.START.getCode())
+                .status(status)
                 .startTime(LocalDateTime.now())
                 .inputData(dto.getTaskData())
                 .queueName(TaskType.fromCode(Integer.parseInt(taskType)))
@@ -100,6 +103,21 @@ public class TaskService {
                 .eq(Task::getId, taskId)
                 .one();
         return CommonMapper.INSTANCE.toVO(one);
+    }
+
+    public void retry(TaskDTO dto) {
+        Long taskId = dto.getTaskId();
+        DeadLetterMessage dMsg = ChainWrappers.lambdaQueryChain(DeadLetterMessage.class)
+                .eq(DeadLetterMessage::getTaskId, taskId)
+                .one();
+        //创建消息
+        Message msg = MsgUtils.createMsgFromDead(dMsg);
+        //发送消息
+        rabbitTemplate.convertAndSend(TaskType.fromCode(Integer.parseInt(dMsg.getTaskType())) + "Exchange", dMsg.getTaskType(), msg);
+    }
+
+    public Page<DeadLetterMessage> deadPage(TaskDTO dto) {
+        return deadLetterMessageMapper.selectPage(Page.of(dto.getPageNo(), dto.getPageSize()), null);
     }
 
 }
