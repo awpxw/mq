@@ -2,6 +2,7 @@ package com.example.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
+import com.example.dto.TaskBatchDTO;
 import com.example.dto.TaskDTO;
 import com.example.entity.Task;
 import com.example.entity.TaskExecutionLog;
@@ -12,11 +13,14 @@ import com.example.map.CommonMapper;
 import com.example.mapper.TaskExecutionLogMapper;
 import com.example.mapper.TaskMapper;
 import com.example.utils.MsgUtils;
+import com.example.vo.TaskVO;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import jakarta.annotation.Resource;
 import org.apache.logging.log4j.spi.ExtendedLoggerWrapper;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -24,6 +28,9 @@ import java.util.Objects;
 
 @Service
 public class TaskService {
+
+    @Resource
+    private RabbitTemplate rabbitTemplate;
 
     @Resource
     private TaskMapper taskMapper;
@@ -41,6 +48,7 @@ public class TaskService {
         taskMapper.insert(task);
     }
 
+    @Transactional
     public void start(TaskDTO dto) {
         Long taskId = dto.getTaskId();
         Task entity = taskMapper.selectById(taskId);
@@ -78,7 +86,27 @@ public class TaskService {
                 .queueName(TaskType.fromCode(Integer.parseInt(taskType)))
                 .build();
         taskExecutionLogMapper.insert(log);
+        //发送消息
+        rabbitTemplate.convertAndSend(TaskType.fromCode(Integer.parseInt(taskType)) + "Exchange", taskType);
     }
 
+    @Transactional
+    public void startBatch(TaskBatchDTO dto) {
+        for (TaskDTO task : dto.getTasks()) {
+            start(task);
+        }
+    }
 
+    public TaskVO detail(TaskDTO dto) {
+        Long taskId = dto.getTaskId();
+        Task one = ChainWrappers.lambdaQueryChain(Task.class)
+                .eq(Task::getId, taskId)
+                .one();
+        return CommonMapper.INSTANCE.toVO(one);
+    }
+
+    public Void retry(TaskDTO dto) {
+        Long taskId = dto.getTaskId();
+
+    }
 }

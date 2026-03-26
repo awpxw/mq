@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.example.entity.TaskExecutionLog;
 import com.example.enums.TaskType;
 import jakarta.annotation.Resource;
-import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;

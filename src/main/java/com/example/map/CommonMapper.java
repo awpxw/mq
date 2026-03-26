@@ -2,6 +2,7 @@ package com.example.map;
 
 import com.example.dto.TaskDTO;
 import com.example.entity.Task;
+import com.example.vo.TaskVO;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 
@@ -11,5 +12,7 @@ public interface CommonMapper {
     CommonMapper INSTANCE = Mappers.getMapper(CommonMapper.class);
 
     Task toEntity(TaskDTO dto);
+
+    TaskVO toVO(Task task);
 
 }
