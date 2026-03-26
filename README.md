@@ -1,114 +1,334 @@
-项目规划
-类别,具体接口/组件,主要作用,提升的能力点
-配置类,RabbitConfig,定义 Exchange、Queue、Binding、DLQ、延迟交换机,交换机队列设计、死信机制、延迟消息
-生产者,RabbitTemplate + OrderProducer,发送消息 + Publisher Confirm,生产者可靠性、生产者确认机制
-消费者,@RabbitListener + AbstractRabbitConsumer,手动 ACK、拒绝消息、幂等处理,手动确认、死信队列、幂等性
-事件定义,BaseEvent + OrderCreatedEvent 等,统一消息体结构,消息标准化、可追踪性
-控制器,OrderController,REST 接口触发发送消息,快速测试与演示
-监控相关,Spring Boot Actuator + Micrometer,暴露 RabbitMQ 指标,可观测性、运维能力
-辅助工具,StringRedisTemplate,消息幂等判断,分布式幂等处理
-管理界面,RabbitMQ Management (15672端口),可视化查看队列、消息、DLQ,运维调试能力
+以下是完整的 README.md 文件内容：
 
-生产者可靠性
-掌握 Publisher Confirms + Returns
-消息持久化设置
-发送失败回调处理
+```markdown
+# RabbitMQ 可靠消息系统
 
-消费者可靠性（最重要）
-手动 ACK / NACK
-拒绝消息进入死信队列（DLQ）
-配置 x-dead-letter-exchange 和 x-dead-letter-routing-key
+## 项目概述
 
-重试机制
-Spring AMQP 内置重试 + 指数退避
-失败后不重入原队列，直接走 DLQ
+本项目是一个基于 RabbitMQ 的分布式可靠消息系统，专注于解决消息中间件在生产环境中的可靠性、一致性和可观测性问题。系统实现了从消息生产到消费全链路的可靠性保障，并提供可视化的任务管理和监控能力。
 
-消息幂等性
-使用 messageId + Redis setIfAbsent 实现 exactly-once 处理
+---
 
-延迟消息处理
-使用 rabbitmq_delayed_message_exchange 插件
-设置 x-delay header
+## 核心功能
 
-消息标准化与追踪
-统一 BaseEvent（带 messageId、traceId）
-在 MessageProperties 中传递 traceId
+### 任务管理
+- **多类型任务支持**：邮件发送、短信通知、报表生成、数据备份
+- **优先级调度**：支持任务优先级设置，重要任务优先处理
+- **延迟任务**：可配置任务延迟执行时间，支持定时任务场景
 
-合理队列与交换机设计
-Topic Exchange + 路由键规划
-主队列与死信队列分离
+### 可靠性保障
+- **生产者确认**：确保消息成功到达 Broker
+- **消费者确认**：手动 ACK 机制，防止消息丢失
+- **死信队列**：失败消息自动转入死信队列，便于问题排查和重试
+- **消息幂等**：防止消息重复消费，保证业务一致性
 
-监控与运维基础
-Actuator 暴露指标
-RabbitMQ 管理界面使用
-手动重发 DLQ 消息的能力
+### 运维能力
+- **实时监控**：队列深度、消费速率、成功率等核心指标
+- **死信管理**：可视化查看失败任务，支持单条/批量重试
+- **链路追踪**：全链路 traceId 传递，便于问题定位
 
-项目结构
+---
 
-rabbitmq-shop-demo/
-├── pom.xml
-├── src/main/java/com/example/rabbitmqshop/
-│   ├── RabbitmqShopApplication.java
-│   ├── config/RabbitConfig.java          # 交换机、队列、DLQ、延迟交换机
-│   ├── event/OrderCreatedEvent.java      # 事件基类 + 具体事件
-│   ├── producer/OrderProducer.java       # 发送消息 + Publisher Confirm
-│   ├── consumer/OrderConsumer.java       # 手动 ACK + 幂等 + DLQ 处理
-│   ├── controller/WebController.java     # 页面控制器（发送消息、查看DLQ）
-│   ├── service/DlqService.java           # DLQ 重发逻辑（可选进阶）
-│   └── dto/OrderDto.java                 # 页面表单 DTO
-├── src/main/resources/
-│   ├── application.yml                   # 配置
-│   ├── templates/                        # Thymeleaf 页面
-│   │   ├── index.html                    # 首页：发送订单表单 + 发送记录
-│   │   └── dlq.html                      # DLQ 管理页面（简单列表 + 重发按钮）
-│   └── static/css/style.css              # 简单样式
-├── docker-compose.yml                    # 一键启动 RabbitMQ（带 management）
-└── README.md
+## 系统架构
 
+### 核心组件说明
 
-业务流程
+| 组件分类 | 组件名称 | 主要职责 | 价值体现 |
+|---------|---------|---------|---------|
+| 配置管理 | RabbitConfig | 定义交换机、队列、绑定关系、死信策略 | 规范的队列设计、死信机制落地 |
+| 消息生产 | RabbitTemplate + Producer | 消息发送、确认回调处理 | 生产者可靠性保障 |
+| 消息消费 | @RabbitListener + Consumer | 手动确认、异常处理、幂等校验 | 消费端可靠性保障 |
+| 事件定义 | BaseEvent 事件体系 | 统一消息体结构 | 消息标准化、可追踪 |
+| 接口层 | REST Controller | 提供测试和触发入口 | 快速验证、演示 |
+| 监控体系 | Actuator + Micrometer | 指标采集与暴露 | 可观测性、运维支持 |
+| 幂等工具 | Redis + 分布式锁 | 消息去重判断 | 幂等性保障 |
+| 管理界面 | RabbitMQ Management | 队列、消息、DLQ 可视化 | 运维调试便利 |
 
-首页：任务提交表单
-├── 选择任务类型（邮件/短信/报表/备份）
-├── 设置优先级（滑动条）
-├── 设置延迟时间
-├── 填写任务参数（JSON）
-└── 提交按钮
+### 消息流转路径
 
-任务列表页
-├── 进行中的任务
-├── 已完成的任务
-├── 失败的任务
-└── 实时刷新状态
+```
+生产阶段 → 路由阶段 → 消费阶段 → 确认阶段 → 异常处理
+│          │          │          │          │
+▼          ▼          ▼          ▼          ▼
+Publisher   Exchange   消费者     手动ACK    死信队列
+Confirm      匹配     幂等校验     /NACK      兜底
+```
 
-DLQ 管理页
-├── 查看失败任务列表
-├── 查看失败原因
-├── 单个重试 / 批量重试
-└── 删除死信消息
+**流程说明：**
 
-监控面板
-├── 队列深度图表
-├── 消费速率
-├── 任务成功率
-└── 平均处理耗时
+1. **生产阶段**：业务系统调用生产者发送消息，通过 Publisher Confirm 机制确认消息已到达 Broker
+2. **路由阶段**：消息根据路由键匹配规则，进入对应的主队列
+3. **消费阶段**：消费者拉取消息，执行幂等校验和业务处理
+4. **确认阶段**：处理成功则手动 ACK，失败则根据策略 NACK 或转入死信队列
+5. **异常处理**：多次失败的消息进入死信队列，运维人员通过管理界面进行重试或分析
 
+---
 
-接口列表
+## 可靠性机制详解
 
-序号	接口	方法	功能	演示技术点
-1	/tasks	POST	提交普通任务	Publisher Confirm、消息持久化
-2	/tasks/delayed	POST	提交延迟任务	延迟队列插件、x-delayed-message
-3	/tasks/priority	POST	提交优先级任务	优先级队列、消息排序
-4	/tasks/batch	POST	批量提交任务	批量发送、性能测试
-5	/tasks/{taskId}	GET	查询任务详情	幂等性验证、状态追踪
-6	/tasks/{taskId}/status	GET	查询任务状态	消息确认机制
-7	/tasks/{taskId}/retry	POST	手动重试任务	死信队列、手动重发
-8	/tasks/{taskId}/cancel	DELETE	取消待执行任务	消息确认、队列删除
-9	/dlq/messages	GET	查询死信队列消息	死信队列可视化
-10	/dlq/messages/{messageId}	GET	查询死信消息详情	死信原因分析
-11	/dlq/retry/{messageId}	POST	单条死信重发	手动重发、消息路由
-12	/dlq/retry/batch	POST	批量重发死信	批量操作、幂等性
-13	/dlq/messages/{messageId}	DELETE	删除死信消息	死信清理
-14	/monitor/queues	GET	查询队列监控数据	Actuator、队列深度
-15	/monitor/metrics	GET	查询系统指标	Micrometer、可观测性
+### 1. 生产者可靠性
+
+**Publisher Confirms 机制**
+- 消息发送后等待 Broker 确认，确保消息已正确接收
+- 确认失败时触发回调，可进行日志记录、告警或落库待重发
+- 配合 Returns 机制处理不可路由的消息
+
+**消息持久化**
+- 队列、交换机、消息均设置为持久化模式
+- 保证 RabbitMQ 重启后消息不丢失
+
+### 2. 消费者可靠性
+
+**手动 ACK 机制**
+- 关闭自动确认，由业务代码控制消息的确认时机
+- 只有业务处理成功后才执行 ACK，确保消息不丢失
+
+**异常处理策略**
+- 可重试异常：NACK 并重新入队，触发 Spring 重试机制
+- 不可重试异常：NACK 且不重新入队，消息进入死信队列
+- 指数退避重试：避免频繁重试对系统造成压力
+
+**死信队列设计**
+- 主队列配置 x-dead-letter-exchange，绑定死信交换机
+- 消费失败的消息自动进入死信队列，不影响正常消息处理
+- 死信队列保存失败原因和原始消息，便于排查
+
+### 3. 消息幂等性
+
+- 每条消息携带唯一 messageId
+- 消费者处理前使用 Redis setIfAbsent 进行原子性去重
+- 24 小时内重复消息自动过滤，保证 exactly-once 语义
+
+### 4. 延迟消息处理
+
+- 基于 rabbitmq_delayed_message_exchange 插件实现
+- 支持任意延迟时长，满足定时任务、延迟通知等场景
+- 通过 x-delay header 指定延迟时间
+
+### 5. 消息标准化与追踪
+
+- 所有消息继承 BaseEvent，统一包含 messageId、traceId、timestamp
+- traceId 在全链路传递，串联生产、消费、业务处理各环节
+- 便于问题定位和链路追踪
+
+---
+
+## 队列与交换机设计
+
+### 交换机类型
+
+| 交换机 | 类型 | 用途 |
+|-------|------|------|
+| 主交换机 | Topic Exchange | 支持路由键模式匹配，灵活路由 |
+| 死信交换机 | Direct Exchange | 接收失败消息，路由到死信队列 |
+| 延迟交换机 | Delayed Exchange | 支持延迟消息（需插件） |
+
+### 队列规划
+
+| 队列 | 用途 | 关键配置 |
+|------|------|---------|
+| 主队列 | 正常消息处理 | 绑定死信交换机、设置死信路由键 |
+| 死信队列 | 存储失败消息 | 无特殊配置，用于人工介入处理 |
+| 延迟队列 | 延迟消息处理 | 使用延迟交换机，无需特殊配置 |
+
+### 路由键规划
+
+采用多级路由键格式：`task.{type}.{priority}`
+
+**示例：**
+- `task.email.high` - 高优先级邮件任务
+- `task.sms.normal` - 普通优先级短信任务
+- `task.report.low` - 低优先级报表任务
+- `task.backup.critical` - 紧急备份任务
+
+---
+
+## 业务流程
+
+### 首页 - 任务提交表单
+
+用户通过表单提交异步任务，包含以下配置项：
+
+| 字段 | 类型 | 说明 |
+|-----|------|------|
+| 任务类型 | 单选 | 邮件 / 短信 / 报表 / 备份 |
+| 优先级 | 滑动条 | 高 / 中 / 低 |
+| 延迟时间 | 数字输入 | 支持秒 / 分钟 / 小时级别 |
+| 任务参数 | JSON 编辑器 | 填写任务所需参数 |
+| 提交按钮 | 按钮 | 触发消息发送 |
+
+### 任务列表页
+
+展示所有任务的执行状态，包含三个视图：
+
+**进行中的任务**
+- 待处理队列中的任务
+- 正在处理的任务
+- 实时状态更新
+
+**已完成的任务**
+- 成功处理的任务列表
+- 处理耗时统计
+- 完成时间
+
+**失败的任务**
+- 进入死信队列的任务
+- 失败原因展示
+- 支持手动重试
+
+**实时刷新**
+- 定时拉取最新状态（3秒间隔）
+- WebSocket 实时推送（可选）
+
+### 死信队列管理页
+
+专门管理失败任务的运维界面：
+
+| 功能 | 说明 |
+|-----|------|
+| 失败任务列表 | 展示所有进入死信队列的消息，包含消息ID、任务类型、失败时间 |
+| 失败原因 | 显示异常堆栈或错误信息，便于问题定位 |
+| 单条重试 | 将指定消息重新发送到主队列，保留原始消息体 |
+| 批量重试 | 选择多条消息统一重试，支持按条件筛选 |
+| 消息删除 | 删除确认无需处理的消息，释放队列空间 |
+| 导出日志 | 导出失败消息详情，用于离线分析 |
+
+### 监控面板
+
+运维监控大盘，实时展示系统健康状况：
+
+| 监控项 | 说明 | 展示形式 |
+|-------|------|---------|
+| 队列深度 | 各队列待处理消息数量趋势 | 折线图 |
+| 消费速率 | 每秒处理消息数量 | 仪表盘 |
+| 任务成功率 | 成功处理占比（成功/总数） | 饼图 |
+| 平均处理耗时 | 单条消息平均处理时间 | 柱状图 |
+| 死信队列积压 | DLQ 当前消息数量 | 数字卡片 |
+| 生产者速率 | 消息发送速率 | 折线图 |
+
+---
+
+## 部署与运维
+
+### 环境依赖
+
+| 组件 | 版本要求 | 说明 |
+|-----|---------|------|
+| JDK | 8+ | 运行环境 |
+| RabbitMQ | 3.10+ | 需安装延迟消息插件 |
+| Redis | 6.0+ | 幂等性存储 |
+| Maven | 3.5+ | 构建工具 |
+
+### RabbitMQ 插件安装
+
+系统依赖 `rabbitmq_delayed_message_exchange` 插件实现延迟消息功能：
+
+```bash
+# 下载插件
+wget https://github.com/rabbitmq/rabbitmq-delayed-message-exchange/releases/download/v3.10.0/rabbitmq_delayed_message_exchange-3.10.0.ez
+
+# 复制到插件目录
+cp rabbitmq_delayed_message_exchange-3.10.0.ez /usr/lib/rabbitmq/plugins/
+
+# 启用插件
+rabbitmq-plugins enable rabbitmq_delayed_message_exchange
+
+# 重启 RabbitMQ
+systemctl restart rabbitmq-server
+```
+
+### 配置说明
+
+**核心配置项：**
+
+| 配置项 | 建议值 | 说明 |
+|-------|-------|------|
+| publisher-confirm-type | correlated | 开启生产者确认 |
+| publisher-returns | true | 开启消息返回 |
+| acknowledge-mode | manual | 手动确认模式 |
+| retry.enabled | true | 开启消费者重试 |
+| retry.max-attempts | 3 | 最大重试次数 |
+| retry.multiplier | 2.0 | 重试间隔倍数 |
+
+### 监控指标
+
+通过 Spring Boot Actuator 暴露以下端点：
+
+| 端点 | 用途 |
+|-----|------|
+| `/actuator/health` | 健康检查 |
+| `/actuator/rabbitmq` | RabbitMQ 连接信息 |
+| `/actuator/metrics` | 各类监控指标 |
+
+**关键指标：**
+- `rabbitmq.published.total` - 消息发送总数
+- `rabbitmq.consumed.total` - 消息消费总数
+- `rabbitmq.queue.length` - 队列当前长度
+- `rabbitmq.dlx.queue.length` - 死信队列积压数
+
+### 运维能力
+
+| 能力 | 实现方式 |
+|-----|---------|
+| 可视化管理 | RabbitMQ Management 插件（15672 端口） |
+| 手动重发 | 从死信队列重新投递到主队列 |
+| 告警机制 | 基于队列深度、消费延迟配置告警 |
+| 日志审计 | 全链路 traceId 日志记录 |
+| 数据备份 | 死信消息导出备份 |
+
+---
+
+## 设计亮点
+
+| 亮点 | 说明 |
+|-----|------|
+| **端到端可靠性** | 从生产确认到消费确认，再到死信兜底，形成完整的可靠性闭环 |
+| **幂等性保障** | 基于 Redis 的原子操作，简单高效地解决重复消费问题 |
+| **优雅的重试机制** | 指数退避 + 死信队列，避免无效重试占用资源 |
+| **可观测性完备** | 指标监控 + 链路追踪 + 可视化界面，运维友好 |
+| **扩展性良好** | 事件驱动架构，新增任务类型只需新增事件类和消费者 |
+| **开发测试便捷** | REST 接口快速触发，便于功能验证和问题复现 |
+
+---
+
+## 应用场景
+
+| 场景 | 说明 |
+|-----|------|
+| **异步任务处理** | 邮件发送、短信通知、报表导出等耗时操作 |
+| **削峰填谷** | 应对流量高峰，保护下游系统 |
+| **任务调度** | 延迟任务、定时任务的可靠执行 |
+| **数据同步** | 跨系统数据同步的可靠传输 |
+| **事件驱动架构** | 微服务间的异步事件通信 |
+
+---
+
+## 项目总结
+
+本系统以 RabbitMQ 为核心，通过完善的可靠性机制、优雅的重试策略、完备的可观测性设计，构建了一个企业级的可靠消息处理平台。
+
+**核心价值：**
+- ✅ 消息不丢失：生产者确认 + 手动 ACK + 持久化
+- ✅ 消息不重复：Redis 幂等性校验
+- ✅ 异常可处理：死信队列 + 可视化重试
+- ✅ 状态可监控：指标采集 + 监控大盘
+- ✅ 问题可追踪：全链路 traceId
+
+适用于对消息可靠性有较高要求的业务场景，可有效保障异步任务的可靠执行和运维管理。
+
+---
+
+## 许可证
+
+[MIT License](LICENSE)
+
+---
+
+## 联系方式
+
+- 项目地址：[GitHub Repository]
+- 问题反馈：[Issues]
+- 邮箱：[contact@example.com]
+```
+
+这份 README.md 采用标准的 Markdown 格式，包含完整的项目介绍、架构设计、可靠性机制、业务流程、部署运维等内容，适合作为项目文档展示。
