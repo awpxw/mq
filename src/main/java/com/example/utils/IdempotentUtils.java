@@ -25,14 +25,14 @@ public class IdempotentUtils {
                 .count() > 0;
         boolean running = ChainWrappers.lambdaQueryChain(MessageIdempotent.class)
                 .eq(MessageIdempotent::getMessageId, messageId)
-                .eq(MessageIdempotent::getStatus, TaskStatus.PROCESSING.getCode())
+                .eq(MessageIdempotent::getStatus, TaskStatus.RUNNING.getCode())
                 .count() > 0;
         if (!repeat || !running) {
             MessageIdempotent idempotent = MessageIdempotent.builder()
                     .messageId(props.getMessageId())
                     .taskId(props.getHeader("taskId"))
                     .consumerName("系统")
-                    .status(TaskStatus.PROCESSING.getCode())
+                    .status(TaskStatus.RUNNING.getCode())
                     .build();
             messageIdempotentMapper.insert(idempotent);
         }

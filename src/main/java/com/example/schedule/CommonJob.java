@@ -2,6 +2,7 @@ package com.example.schedule;
 
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.example.entity.Task;
+import com.example.enums.TaskStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -11,14 +12,14 @@ import java.time.LocalDateTime;
 public class CommonJob {
 
 
-    @Scheduled
+    @Scheduled(fixedRate = 1000)
     public void startDelayTask() {
 
         ChainWrappers.lambdaUpdateChain(Task.class)
-                .eq(Task::getCurrentStage, ExecutionStage.PENDING.getCode())
+                .eq(Task::getStatus, TaskStatus.PENDING.getCode())
                 .ne(Task::getDelayMs, null)
                 .gt(Task::getExecuteTime, LocalDateTime.now())
-                .set(Task::getCurrentStage, ExecutionStage.RUNNING.getCode())
+                .set(Task::getStatus, TaskStatus.RUNNING.getCode())
                 .set(Task::getStartTime, LocalDateTime.now())
                 .update();
 

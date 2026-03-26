@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.example.dto.TaskBatchDTO;
 import com.example.dto.TaskDTO;
 import com.example.entity.DeadLetterMessage;
+import com.example.entity.QueueMonitorHistory;
 import com.example.entity.Task;
 import com.example.entity.TaskExecutionLog;
 import com.example.enums.TaskStatus;
@@ -15,14 +16,19 @@ import com.example.mapper.TaskExecutionLogMapper;
 import com.example.mapper.TaskMapper;
 import com.example.utils.MsgUtils;
 import com.example.vo.TaskVO;
+import com.rabbitmq.http.client.Client;
+import com.rabbitmq.http.client.domain.MessageStats;
+import com.rabbitmq.http.client.domain.QueueInfo;
 import jakarta.annotation.Resource;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class TaskService {
@@ -38,6 +44,9 @@ public class TaskService {
 
     @Resource
     private DeadLetterMessageMapper deadLetterMessageMapper;
+
+    @Resource
+    private Client rabbitManagementClient;
 
 
     public Page<Task> page(TaskDTO task) {
@@ -118,6 +127,47 @@ public class TaskService {
 
     public Page<DeadLetterMessage> deadPage(TaskDTO dto) {
         return deadLetterMessageMapper.selectPage(Page.of(dto.getPageNo(), dto.getPageSize()), null);
+    }
+
+    public List<QueueMonitorHistory> getQueuesMonitor(List<String> queueNames, String vhost) {
+        return queueNames.stream()
+                .map(queue -> getQueueMonitor(vhost, queue))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    public QueueMonitorHistory getQueueMonitor(String vhost, String queueName) {
+        try {
+            QueueInfo queueInfo = rabbitManagementClient.getQueue(vhost, queueName);
+            if (queueInfo == null) {
+                return null;
+            }
+            QueueMonitorHistory history = new QueueMonitorHistory();
+            history.setQueueName(queueInfo.getName());
+            history.setVhost(queueInfo.getVhost());
+            history.setMessagesReady((int) queueInfo.getMessagesReady());
+            history.setMessagesUnacknowledged((int) queueInfo.getMessagesUnacknowledged());
+            history.setMessagesTotal((int) queueInfo.getTotalMessages());
+            history.setConsumers((int) queueInfo.getConsumerCount());
+            history.setMemoryUsed(queueInfo.getMemoryUsed());
+
+            // 速率字段（带判空）
+            MessageStats stats = queueInfo.getMessageStats();
+            if (stats != null) {
+                if (stats.getBasicPublishDetails() != null) {
+                    history.setPublishRate(BigDecimal.valueOf(stats.getBasicPublishDetails().getRate()));
+                }
+                if (stats.getBasicDeliverDetails() != null) {
+                    history.setDeliverRate(BigDecimal.valueOf(stats.getBasicDeliverDetails().getRate()));
+                }
+                if (stats.getAckDetails() != null) {
+                    history.setAckRate(BigDecimal.valueOf(stats.getAckDetails().getRate()));
+                }
+            }
+            return history;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
 }

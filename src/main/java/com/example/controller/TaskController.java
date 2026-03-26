@@ -5,23 +5,26 @@ import com.example.common.exception.Result;
 import com.example.dto.TaskBatchDTO;
 import com.example.dto.TaskDTO;
 import com.example.entity.DeadLetterMessage;
+import com.example.entity.QueueMonitorHistory;
 import com.example.entity.Task;
 import com.example.mapper.TaskMapper;
 import com.example.service.TaskService;
 import com.example.vo.TaskVO;
 import jakarta.annotation.Resource;
+import lombok.Getter;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Arrays;
+import java.util.List;
 
 @RestController("/task")
 public class TaskController {
 
     @Resource
     private TaskService taskService;
-
-    @Resource
-    private TaskMapper taskMapper;
 
     @PostMapping("/page")
     public Result<Page<Task>> page(@RequestBody TaskDTO task) {
@@ -62,5 +65,10 @@ public class TaskController {
         return Result.success(null);
     }
 
+    @GetMapping("/metrics")
+    public Result<List<QueueMonitorHistory>> metrics() {
+        List<String> queues = Arrays.asList("taskQueue", "bakQueue");
+        return Result.success(taskService.getQueuesMonitor(queues, "/"));
+    }
 
 }

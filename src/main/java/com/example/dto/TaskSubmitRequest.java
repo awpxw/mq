@@ -9,7 +9,6 @@ public class TaskSubmitRequest {
     /**
      * 任务类型
      */
-    @NotBlank(message = "任务类型不能为空")
     private String taskType;
 
     /**
@@ -25,7 +24,6 @@ public class TaskSubmitRequest {
     /**
      * 任务数据（JSON字符串）
      */
-    @NotNull(message = "任务数据不能为空")
     private String taskData;
 
     /**
